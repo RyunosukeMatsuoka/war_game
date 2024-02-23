@@ -28,7 +28,7 @@ class WarGame
             $player->playerName = $player->playerName . $player->playerNum;
             $players[] = $player;
         }
-        //手札をプレイヤーごとに作成
+        //プレイヤーごとに手札を作成
         foreach ($players as $player) {
             for ($i = 0; $i < self::DECK_NUM / count($players); $i++) {
                 $card = $player->drawCard($this->deck);
@@ -59,9 +59,9 @@ class WarGame
 
                     if (is_string($winner)) {
                         $this->showResult($winner, $cardsInfo);
-                        //勝者が勝ち取ったカードをstockに一時保管
+
                         $this->winCards($winner, $cardsInfo, $players);
-                        //もしプレイヤーの手札がなかったら補充する
+
                         shuffle($player->earnedCards);
                         foreach ($players as $player) {
                             array_shift($player->earnedCards);
@@ -75,13 +75,18 @@ class WarGame
                         foreach ($players as $player) {
                             array_shift($player->earnedCards);
                         }
+                        
                         //もしプレイヤーの手札がなかったら補充する
                         $eachInfo = [];
                         echo '引き分けです。' . PHP_EOL;
+                        if (count($players[0]->earnedCards) === 0) {
+                            break;
+                        } elseif (count($players[1]->earnedCards) === 0) {
+                            break;
+                        }
                     }
                 }
             } else {
-                /* $this->decision->decideFinalWinner(); */
                 $this->showFinalResult($players);
                 break;
             }
@@ -114,9 +119,7 @@ class WarGame
             if ($winner === $player->playerName) {
                 foreach ($cardsInfo as $info) {
                     //プレイヤーごとのstockに保存
-                    $cardInfo[] = $info;
-                    $player->earnedCards = array_merge($player->earnedCards, $cardInfo);
-                    $cardInfo = [];
+                    $player->earnedCards = array_merge($player->earnedCards, [$info]);
                 }
             }
         }
@@ -139,9 +142,9 @@ class WarGame
             $card[] = count($player->earnedCards);
         }
 
-        if ($card[0] === 52) {
+        if ($card[0] > $card[1]) {
             echo 'プレイヤー1が1位、プレイヤー2が2位です。' . PHP_EOL;
-        } elseif ($card[1] === 52) {
+        } elseif ($card[0] < $card[1]) {
             echo 'プレイヤー2が1位、プレイヤー1が2位です。' . PHP_EOL;
         }
 

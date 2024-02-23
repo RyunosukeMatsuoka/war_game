@@ -85,12 +85,12 @@ class WarGame
                         foreach ($players as $player) {
                             if (count($player->handCards) === 0 && count($player->stockCards) === 0) {
                                     break 2;
-                                } elseif (count($player->stockCards) !== 0 && count($player->handCards) === 0) {
-                                    $player->handCards = $player->stockCards;
-                                    $player->stockCards = [];
-                                    shuffle($player->handCards);
-                                }
+                            } elseif (count($player->stockCards) !== 0 && count($player->handCards) === 0) {
+                                $player->handCards = $player->stockCards;
+                                $player->stockCards = [];
+                                shuffle($player->handCards);
                             }
+                        }
                     }
                         $eachInfo = [];
                         echo '引き分けです。' . PHP_EOL;

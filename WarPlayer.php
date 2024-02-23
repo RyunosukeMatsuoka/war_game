@@ -10,7 +10,9 @@ class WarPlayer
 
     public int $playerNum = 1;
 
-    public array $earnedCards = [];
+    public array $handCards = [];
+
+    public array $stockCards = [];
 
     public function drawCard(WarDeck $deck)
     {

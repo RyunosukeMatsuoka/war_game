@@ -26,32 +26,29 @@ class WarGame
             $player = new WarPlayer();
             $player->playerNum = $i;
             $player->playerName = $player->playerName . $player->playerNum;
-            $players[] = $player;
+            $players[] = clone($player);
         }
-        //プレイヤーごとに手札を作成
+        //手札をプレイヤーごとに作成
         foreach ($players as $player) {
             for ($i = 0; $i < self::DECK_NUM / count($players); $i++) {
                 $card = $player->drawCard($this->deck);
                 $cardInfo = $card->getCardInfo();
-                $player->earnedCards[] = $cardInfo;
-                $cardInfo = [];
+                $player->handCards[] = $cardInfo;
+                $player->stockCards = [];
+                /* $cardInfo = []; */
             }
         }
         echo 'カードが配られました。' . PHP_EOL;
-        //もし手札のないプレイヤーがいたら、ファイナルジャッジ！
-        //→ディシジョンクラス
+
         while (true) {
-            if ($this->hadCard($players[0]->earnedCards) && $this->hadCard($players[1]->earnedCards)) {
+            if ($this->hadCard($players[0]->handCards) && $this->hadCard($players[1]->handCards)) {
                 $cardsInfo = [];
-                $allInfo = [];
                 while (true) {
                     foreach ($players as $player) {
-                        $card = $this->drawCard($player->earnedCards);
-                        $cardsInfo[] = $card;
-                        $eachInfo[] = array_merge([$player->playerName], $card);
+                        $handCard = $this->drawCard($player->handCards);
+                        $cardsInfo[] = $handCard;
+                        $eachInfo[] = array_merge([$player->playerName], $handCard);
                     }
-
-                    $allInfo[] = $eachInfo;
 
                     $this->showCard($eachInfo);
 
@@ -60,31 +57,43 @@ class WarGame
                     if (is_string($winner)) {
                         $this->showResult($winner, $cardsInfo);
 
-                        $this->winCards($winner, $cardsInfo, $players);
+                        //勝者が勝ち取ったカードをstockに一時保管
+                        $this->stockCards($winner, $cardsInfo, $players);
 
-                        shuffle($player->earnedCards);
                         foreach ($players as $player) {
-                            array_shift($player->earnedCards);
+                            array_shift($player->handCards);
+                        }
+
+                        //もしプレイヤーの手札がなかったら補充する
+                        foreach ($players as $player) {
+                            if (count($player->handCards) === 0) {
+                                $player->handCards = $player->stockCards;
+                                $player->stockCards = [];
+                                shuffle($player->handCards);
+                            }
                         }
 
                         $eachInfo = [];
-                        $allInfo = [];
                         $cardsInfo = [];
                         break;
                     } else {
                         foreach ($players as $player) {
-                            array_shift($player->earnedCards);
+                            array_shift($player->handCards);
                         }
-                        
-                        //もしプレイヤーの手札がなかったら補充する
+                        //もし手札がなかったら補充する
+                        //手札もストックもない場合はファイナルジャッジ
+                        foreach ($players as $player) {
+                            if (count($player->handCards) === 0 && count($player->stockCards) === 0) {
+                                    break 2;
+                                } elseif (count($player->stockCards) !== 0 && count($player->handCards) === 0) {
+                                    $player->handCards = $player->stockCards;
+                                    $player->stockCards = [];
+                                    shuffle($player->handCards);
+                                }
+                            }
+                    }
                         $eachInfo = [];
                         echo '引き分けです。' . PHP_EOL;
-                        if (count($players[0]->earnedCards) === 0) {
-                            break;
-                        } elseif (count($players[1]->earnedCards) === 0) {
-                            break;
-                        }
-                    }
                 }
             } else {
                 $this->showFinalResult($players);
@@ -113,13 +122,12 @@ class WarGame
         echo "{$winner}はカードを{$earnedNum}枚もらいました" . PHP_EOL;
     }
 
-    private function winCards(string $winner, array $cardsInfo, array $players)
+    private function stockCards(string $winner, array $cardsInfo, array $players)
     {
         foreach ($players as $player) {
             if ($winner === $player->playerName) {
                 foreach ($cardsInfo as $info) {
-                    //プレイヤーごとのstockに保存
-                    $player->earnedCards = array_merge($player->earnedCards, [$info]);
+                    $player->stockCards = array_merge($player->stockCards, [$info]);
                 }
             }
         }
@@ -128,23 +136,23 @@ class WarGame
     private function showFinalResult($players): void
     {
         foreach ($players as $player) {
-            if (count($player->earnedCards) === 0) {
+            if (count($player->handCards) === 0) {
                 echo $player->playerName . 'の手札がなくなりました。' . PHP_EOL;
             }
         }
 
         foreach ($players as $player) {
-            echo $player->playerName . 'の手札の枚数は' . count($player->earnedCards) . '枚です。';
+            echo $player->playerName . 'の手札の枚数は' . count($player->handCards) + count($player->stockCards) . '枚です。';
         }
         echo PHP_EOL;
 
         foreach ($players as $player) {
-            $card[] = count($player->earnedCards);
+            $finalCardNum[] = count($player->handCards);
         }
 
-        if ($card[0] > $card[1]) {
+        if ($finalCardNum[0] > $finalCardNum[1]) {
             echo 'プレイヤー1が1位、プレイヤー2が2位です。' . PHP_EOL;
-        } elseif ($card[0] < $card[1]) {
+        } elseif ($finalCardNum[0] < $finalCardNum[1]) {
             echo 'プレイヤー2が1位、プレイヤー1が2位です。' . PHP_EOL;
         }
 
@@ -152,9 +160,9 @@ class WarGame
     }
 
 
-    private function hadCard(array $earnedCards): bool
+    private function hadCard(array $cards): bool
     {
-        if (count($earnedCards) !== 0) {
+        if (count($cards) !== 0) {
             return true;
         } else {
             return false;

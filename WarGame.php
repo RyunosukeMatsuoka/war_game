@@ -35,7 +35,6 @@ class WarGame
                 $cardInfo = $card->getCardInfo();
                 $player->handCards[] = $cardInfo;
                 $player->stockCards = [];
-                /* $cardInfo = []; */
             }
         }
         echo 'カードが配られました。' . PHP_EOL;
@@ -80,20 +79,22 @@ class WarGame
                         foreach ($players as $player) {
                             array_shift($player->handCards);
                         }
+
+                        echo '引き分けです。' . PHP_EOL;
+
                         //もし手札がなかったら補充する
                         //手札もストックもない場合はファイナルジャッジ
                         foreach ($players as $player) {
                             if (count($player->handCards) === 0 && count($player->stockCards) === 0) {
                                     break 2;
-                                } elseif (count($player->stockCards) !== 0 && count($player->handCards) === 0) {
-                                    $player->handCards = $player->stockCards;
-                                    $player->stockCards = [];
-                                    shuffle($player->handCards);
-                                }
+                            } elseif (count($player->stockCards) !== 0 && count($player->handCards) === 0) {
+                                $player->handCards = $player->stockCards;
+                                $player->stockCards = [];
+                                shuffle($player->handCards);
                             }
+                        }
                     }
                         $eachInfo = [];
-                        echo '引き分けです。' . PHP_EOL;
                 }
             } else {
                 $this->showFinalResult($players);
@@ -158,7 +159,6 @@ class WarGame
 
         echo '戦争を終了します。' . PHP_EOL;
     }
-
 
     private function hadCard(array $cards): bool
     {

@@ -11,4 +11,6 @@ $decision = new WarDecision();
 
 $game = new WarGame($deck, $decision);
 
-$game->start();
+$players = $game->start();
+
+$game->battle($players);

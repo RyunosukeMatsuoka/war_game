@@ -3,10 +3,13 @@
 namespace War;
 
 require_once('WarDeck.php');
+/* require_once('WarUser.php'); */
 
 class WarPlayer
 {
-    public string $playerName = 'プレイヤー';
+    public function __construct(public string $name)
+    {
+    }
 
     public int $playerNum = 1;
 

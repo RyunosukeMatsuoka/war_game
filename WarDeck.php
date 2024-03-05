@@ -18,10 +18,12 @@ class WarDeck
             }
         }
 
+        //デッキをシャッフルする
         shuffle($cards);
         $this->cards = $cards;
     }
 
+    //カードを引く
     public function drawCard(): object
     {
         return array_shift($this->cards);

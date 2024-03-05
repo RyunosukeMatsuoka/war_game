@@ -18,19 +18,22 @@ class WarGame
     {
         echo '戦争を開始します。' . PHP_EOL;
 
-        $playerNum = 2;
+        //プレイヤーの人数、名前を入力する
+        echo 'プレイヤーの人数を入力してください（2〜5）:';
+        $playerNum = (int) trim(fgets(STDIN));
 
         $players = [];
-        //プレイヤー作成
+        //プレイヤーを作成する
         for ($i = 1; $i <= $playerNum; $i++) {
-            $player = new WarPlayer();
+            echo 'プレイヤー' . $i . 'の名前を入力してください:';
+            $name = (string) trim(fgets(STDIN));
+            $player = new WarPlayer($name);
             $player->playerNum = $i;
-            $player->playerName = $player->playerName . $player->playerNum;
             $players[] = clone($player);
         }
-        //手札をプレイヤーごとに作成
+        //手札をプレイヤーごとに作成する
         foreach ($players as $player) {
-            for ($i = 0; $i < self::DECK_NUM / count($players); $i++) {
+            for ($i = 0; $i < (self::DECK_NUM - (self::DECK_NUM % count($players))) / count($players); $i++) {
                 $card = $player->drawCard($this->deck);
                 $cardInfo = $card->getCardInfo();
                 $player->handCards[] = $cardInfo;
@@ -38,74 +41,59 @@ class WarGame
             }
         }
         echo 'カードが配られました。' . PHP_EOL;
-
-        while (true) {
-            if ($this->hadCard($players[0]->handCards) && $this->hadCard($players[1]->handCards)) {
-                $cardsInfo = [];
-                while (true) {
-                    foreach ($players as $player) {
-                        $handCard = $this->drawCard($player->handCards);
-                        $cardsInfo[] = $handCard;
-                        $eachInfo[] = array_merge([$player->playerName], $handCard);
-                    }
-
-                    $this->showCard($eachInfo);
-
-                    $winner = $this->decision->decideWinner($eachInfo);
-
-                    if (is_string($winner)) {
-                        $this->showResult($winner, $cardsInfo);
-
-                        //勝者が勝ち取ったカードをstockに一時保管
-                        $this->stockCards($winner, $cardsInfo, $players);
-
-                        foreach ($players as $player) {
-                            array_shift($player->handCards);
-                        }
-
-                        //もしプレイヤーの手札がなかったら補充する
-                        foreach ($players as $player) {
-                            if (count($player->handCards) === 0) {
-                                $player->handCards = $player->stockCards;
-                                $player->stockCards = [];
-                                shuffle($player->handCards);
-                            }
-                        }
-
-                        $eachInfo = [];
-                        $cardsInfo = [];
-                        break;
-                    } else {
-                        foreach ($players as $player) {
-                            array_shift($player->handCards);
-                        }
-
-                        echo '引き分けです。' . PHP_EOL;
-
-                        //もし手札がなかったら補充する
-                        //手札もストックもない場合はファイナルジャッジ
-                        foreach ($players as $player) {
-                            if (count($player->handCards) === 0 && count($player->stockCards) === 0) {
-                                    break 2;
-                            } elseif (count($player->stockCards) !== 0 && count($player->handCards) === 0) {
-                                $player->handCards = $player->stockCards;
-                                $player->stockCards = [];
-                                shuffle($player->handCards);
-                            }
-                        }
-                    }
-                        $eachInfo = [];
-                }
-            } else {
-                $this->showFinalResult($players);
-                break;
-            }
-        }
+        return $players;
     }
 
-    public function drawCard($cards)
+    public function battle(array $players)
     {
-        return array_shift($cards);
+        while (true) {
+            if (!$this->continueBattle($players)) {
+                $this->decision->showFinalResult($players);
+                break;
+            }
+            $cardsInfo = [];
+            while (true) {
+                foreach ($players as $player) {
+                    $handCard = array_shift($player->handCards);
+                    $cardsInfo[] = $handCard;
+                    $eachInfo[] = array_merge([$player->name], $handCard);
+                }
+
+                $this->showCard($eachInfo);
+
+                $winner = $this->decision->decideWinner($eachInfo);
+
+                if (is_string($winner)) {
+                    $this->showResult($winner, $cardsInfo);
+
+                    //勝者が勝ち取ったカードをstockに一時保管
+                    $this->stockCards($winner, $cardsInfo, $players);
+
+                    //もしプレイヤーの手札がなかったら補充する
+                    foreach ($players as $player) {
+                        if (!$this->hadCard($player->handCards)) {
+                            $this->replenishHand($player);
+                        }
+                    }
+
+                    $eachInfo = [];
+                    $cardsInfo = [];
+                    break;
+                } else {
+                    echo '引き分けです。' . PHP_EOL;
+                    $eachInfo = [];
+                    //もし手札がなかったら補充する
+                    //手札もストックもない場合はファイナルジャッジ
+                    foreach ($players as $player) {
+                        if (!$this->hadCard($player->handCards) && $this->hadCard($player->stockCards)) {
+                            $this->replenishHand($player);
+                        } elseif (!$this->hadCard($player->handCards) && !$this->hadCard($player->stockCards)) {
+                            break 2;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private function showCard(array $eachInfo): void
@@ -126,38 +114,13 @@ class WarGame
     private function stockCards(string $winner, array $cardsInfo, array $players)
     {
         foreach ($players as $player) {
-            if ($winner === $player->playerName) {
+            if ($winner === $player->name) {
                 foreach ($cardsInfo as $info) {
+                    //プレイヤーごとのstockに保存
                     $player->stockCards = array_merge($player->stockCards, [$info]);
                 }
             }
         }
-    }
-
-    private function showFinalResult($players): void
-    {
-        foreach ($players as $player) {
-            if (count($player->handCards) === 0) {
-                echo $player->playerName . 'の手札がなくなりました。' . PHP_EOL;
-            }
-        }
-
-        foreach ($players as $player) {
-            echo $player->playerName . 'の手札の枚数は' . count($player->handCards) + count($player->stockCards) . '枚です。';
-        }
-        echo PHP_EOL;
-
-        foreach ($players as $player) {
-            $finalCardNum[] = count($player->handCards);
-        }
-
-        if ($finalCardNum[0] > $finalCardNum[1]) {
-            echo 'プレイヤー1が1位、プレイヤー2が2位です。' . PHP_EOL;
-        } elseif ($finalCardNum[0] < $finalCardNum[1]) {
-            echo 'プレイヤー2が1位、プレイヤー1が2位です。' . PHP_EOL;
-        }
-
-        echo '戦争を終了します。' . PHP_EOL;
     }
 
     private function hadCard(array $cards): bool
@@ -167,5 +130,22 @@ class WarGame
         } else {
             return false;
         }
+    }
+
+    public function replenishHand(mixed $player): void
+    {
+        $player->handCards = $player->stockCards;
+        $player->stockCards = [];
+        shuffle($player->handCards);
+    }
+
+    public function continueBattle(array $players): bool
+    {
+        foreach ($players as $player) {
+            if (!$this->hadCard($player->handCards)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

@@ -24,19 +24,52 @@ class WarDecision
     public function decideWinner(array $allInfo)
     {
         $cardRanks = [];
-        $name = [];
         foreach ($allInfo as $info) {
-            $numInfo = [$this->cardRanks[$info[2]]];
-            $cardRanks = array_merge($cardRanks, $numInfo);
-            $name[] = $info[0];
+            $cardRank = [$this->cardRanks[$info[2]]];
+            $nameAndRank[$this->cardRanks[$info[2]]] = $info[0];
+            $cardRanks = array_merge($cardRanks, $cardRank);
         }
 
-        if ($cardRanks[0] < $cardRanks[1]) {
-            return $name[0];
-        } elseif ($cardRanks[0] > $cardRanks[1]) {
-            return $name[1];
+        sort($cardRanks);
+
+        if ($cardRanks[0] !== $cardRanks[1]) {
+            return $nameAndRank[$cardRanks[0]];
         } else {
             return 1;
         }
+    }
+
+    public function showFinalResult(array $players): void
+    {
+        foreach ($players as $player) {
+            if (count($player->handCards) + count($player->stockCards) === 0) {
+                echo $player->name . 'の手札がなくなりました。' . PHP_EOL;
+            }
+        }
+
+        for ($i = 0; $i < count($players); $i++) {
+            $finalCardNum[$i] = count($players[$i]->handCards) + count($players[$i]->stockCards);
+            /* $nameAndFinalCardNum[$finalCardNum[$i]] = $players[$i]->name; */
+            $nameAndFinalCardNum[$players[$i]->name] = $finalCardNum[$i];
+            $stockFinalCardNum[] = $finalCardNum[$i];
+            echo $players[$i]->name . 'の手札の枚数は' . $finalCardNum[$i] . '枚です。';
+        }
+        echo PHP_EOL;
+
+        //保持しているカード枚数が多い順に並べ替える
+        arsort($nameAndFinalCardNum);
+
+        //並べ替えた順番ごとに順位を表示する
+        $j = 0;
+        foreach ($nameAndFinalCardNum as $name => $CardNum) {
+            $j++;
+            if ($j !== count($players)) {
+                echo $name . 'が' . $j . '位、';
+            } else {
+                echo $name . 'が' . $j . '位です。' . PHP_EOL;
+            }
+        }
+
+        echo '戦争を終了します。' . PHP_EOL;
     }
 }

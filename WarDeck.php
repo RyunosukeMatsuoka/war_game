@@ -18,6 +18,8 @@ class WarDeck
             }
         }
 
+        $cards[] = new WarCard('ジョーカー', 'ジョーカー');
+
         //デッキをシャッフルする
         shuffle($cards);
         $this->cards = $cards;

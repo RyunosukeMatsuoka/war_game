@@ -17,14 +17,15 @@ class WarDecision
                 $cardRanks[$cardNum] = $rank;
                 $rank++;
             }
+            $cardRanks['ジョーカー'] = 0;
             $this->cardRanks = $cardRanks;
         })());
     }
 
-    public function decideWinner(array $allInfo)
+    public function decideWinner(array $eachInfo)
     {
         $cardRanks = [];
-        foreach ($allInfo as $info) {
+        foreach ($eachInfo as $info) {
             $cardRank = [$this->cardRanks[$info[2]]];
             $nameAndRank[$this->cardRanks[$info[2]]] = $info[0];
             $cardRanks = array_merge($cardRanks, $cardRank);
@@ -34,6 +35,13 @@ class WarDecision
 
         if ($cardRanks[0] !== $cardRanks[1]) {
             return $nameAndRank[$cardRanks[0]];
+        } elseif ($cardRanks[0] === 1 && $cardRanks[1] === 1) {
+            //全探索をかけてスペードがあるかどうかたしかめる
+            for ($i = 0; $i < count($eachInfo); $i++) {
+                if ($eachInfo[$i][1] === 'スペード') {
+                    return $eachInfo[$i][0];
+                }
+            }
         } else {
             return 1;
         }
@@ -49,14 +57,12 @@ class WarDecision
 
         for ($i = 0; $i < count($players); $i++) {
             $finalCardNum[$i] = count($players[$i]->handCards) + count($players[$i]->stockCards);
-            /* $nameAndFinalCardNum[$finalCardNum[$i]] = $players[$i]->name; */
             $nameAndFinalCardNum[$players[$i]->name] = $finalCardNum[$i];
             $stockFinalCardNum[] = $finalCardNum[$i];
             echo $players[$i]->name . 'の手札の枚数は' . $finalCardNum[$i] . '枚です。';
         }
         echo PHP_EOL;
 
-        //保持しているカード枚数が多い順に並べ替える
         arsort($nameAndFinalCardNum);
 
         //並べ替えた順番ごとに順位を表示する

@@ -100,7 +100,11 @@ class WarGame
     {
         echo '戦争！' . PHP_EOL;
         foreach ($eachInfo as $info) {
-            echo "{$info[0]}の引いたカードは{$info[1]}の{$info[2]}です。" . PHP_EOL;
+            if ($info[1] === 'ジョーカー') {
+                echo "{$info[0]}の引いたカードは{$info[1]}です。" . PHP_EOL;
+            } else {
+                echo "{$info[0]}の引いたカードは{$info[1]}の{$info[2]}です。" . PHP_EOL;
+            }
         }
     }
 
